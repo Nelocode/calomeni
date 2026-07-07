@@ -1,0 +1,289 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db, products } from '../../../db/client';
+import { desc, eq } from 'drizzle-orm';
+
+export const prerender = false;
+
+let successMsg = '';
+let errorMsg = '';
+
+// Procesar eliminación
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const id = formData.get('id')?.toString();
+
+    if (action === 'delete' && id) {
+      await db.delete(products).where(eq(products.id, id));
+      successMsg = 'Producto eliminado con éxito.';
+    }
+  } catch (err) {
+    errorMsg = 'No se pudo eliminar el producto.';
+    console.error(err);
+  }
+}
+
+// Consultar catálogo
+const list = await db
+  .select()
+  .from(products)
+  .orderBy(desc(products.updatedAt));
+
+// Formatear moneda colombiana
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(value);
+};
+---
+
+<AdminLayout title="Catálogo de Productos">
+  {successMsg && (
+    <div class="alert alert-success">
+      <span>✅</span>
+      <p>{successMsg}</p>
+    </div>
+  )}
+
+  {errorMsg && (
+    <div class="alert alert-error">
+      <span>⚠️</span>
+      <p>{errorMsg}</p>
+    </div>
+  )}
+
+  <div class="page-actions-header">
+    <p class="count-label">Total: <strong>{list.length}</strong> productos</p>
+    <a href="/admin/productos/crear" class="btn btn-primary">
+      <span>➕</span> Agregar Producto
+    </a>
+  </div>
+
+  <div class="dashboard-card glass-panel">
+    {list.length === 0 ? (
+      <div class="empty-state">
+        <span class="empty-icon">🛍️</span>
+        <p>Tu catálogo de productos está vacío.</p>
+        <p class="empty-sub">Crea tu primer producto para que tus clientes puedan comprarlo.</p>
+      </div>
+    ) : (
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Imagen</th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Ruta / Slug</th>
+              <th class="actions-th">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((prod) => {
+              const imagesArray = JSON.parse(prod.images || '[]');
+              const firstImage = imagesArray[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&q=80';
+              return (
+                <tr>
+                  <td>
+                    <div class="product-preview-img-container">
+                      <img src={firstImage} alt={prod.name} class="product-preview-img" />
+                    </div>
+                  </td>
+                  <td>
+                    <span class="item-title">{prod.name}</span>
+                  </td>
+                  <td class="order-total">{formatCurrency(prod.price)}</td>
+                  <td>
+                    <span class={`stock-label ${prod.stock === 0 ? 'no-stock' : prod.stock < 5 ? 'low-stock' : ''}`}>
+                      {prod.stock} unidades
+                    </span>
+                  </td>
+                  <td>
+                    <span class={`status-dot-badge ${prod.published === 1 ? 'pub' : 'draft'}`}>
+                      <span class="dot"></span>
+                      {prod.published === 1 ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <code class="slug-code">/productos/{prod.slug}</code>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <a href={`/productos/${prod.slug}`} target="_blank" class="action-btn btn-view" title="Ver en Tienda">
+                        👁️
+                      </a>
+                      <a href={`/admin/productos/editar/${prod.id}`} class="action-btn btn-edit" title="Editar">
+                        ✏️
+                      </a>
+                      <form method="POST" class="delete-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto?')">
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="id" value={prod.id} />
+                        <button type="submit" class="action-btn btn-delete" title="Eliminar">
+                          🗑️
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</AdminLayout>
+
+<style>
+  .page-actions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .count-label {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .product-preview-img-container {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    background: hsla(222, 25%, 5%, 0.5);
+  }
+
+  .product-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .stock-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+  
+  .stock-label.low-stock {
+    color: var(--color-warning);
+    font-weight: 600;
+  }
+
+  .stock-label.no-stock {
+    color: var(--color-danger);
+    font-weight: 600;
+  }
+
+  .slug-code {
+    background: hsla(222, 25%, 5%, 0.5);
+    border: 1px solid var(--border-light);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--color-secondary-light);
+  }
+
+  .status-dot-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .status-dot-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .status-dot-badge.pub { color: var(--text-main); }
+  .status-dot-badge.pub .dot { background-color: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+  .status-dot-badge.draft { color: var(--text-muted); }
+  .status-dot-badge.draft .dot { background-color: var(--text-muted-dark); }
+
+  .item-title {
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .order-total {
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: var(--color-secondary-light);
+  }
+
+  .actions-th {
+    text-align: right;
+  }
+
+  .table-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .action-btn {
+    background: hsla(222, 25%, 15%, 0.5);
+    border: 1px solid var(--border-light);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition-fast);
+  }
+
+  .action-btn:hover {
+    transform: translateY(-2px);
+    background: var(--bg-surface-hover);
+  }
+
+  .btn-view:hover { border-color: var(--color-secondary); }
+  .btn-edit:hover { border-color: var(--color-primary); }
+  .btn-delete:hover { border-color: var(--color-danger); background-color: hsla(350, 89%, 60%, 0.1); }
+
+  .delete-form {
+    margin: 0;
+    display: inline;
+  }
+
+  .delete-form button {
+    display: inline-flex;
+    padding: 0;
+  }
+
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .alert-success {
+    background-color: hsla(142, 70%, 45%, 0.15);
+    border: 1px solid hsla(142, 70%, 45%, 0.3);
+    color: hsl(142, 100%, 75%);
+  }
+
+  .alert-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    border: 1px solid hsla(350, 89%, 60%, 0.3);
+    color: hsl(350, 100%, 75%);
+  }
+</style>

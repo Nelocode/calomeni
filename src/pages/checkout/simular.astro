@@ -1,0 +1,194 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export const prerender = false;
+
+const orderId = Astro.url.searchParams.get('orderId') || '';
+const total = Astro.url.searchParams.get('total') || '0';
+
+if (!orderId) {
+  return Astro.redirect('/productos');
+}
+
+// Formateador
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(value);
+};
+---
+
+<Layout title="Pasarela de Pagos (Simulador) | CMS Base">
+  <div class="simulation-container">
+    <div class="simulation-card glass-panel animate-fade-in">
+      <div class="simulation-header">
+        <span class="sim-badge">Simulador Seguro</span>
+        <h1>Pasarela de Pagos Base</h1>
+        <p class="sim-desc">Estás en el entorno de pruebas para verificar integraciones de PayU, ePayco, Mercado Pago o PayPal.</p>
+      </div>
+
+      <div class="payment-summary">
+        <div class="summary-line">
+          <span>Referencia de Pago:</span>
+          <strong>{orderId.slice(0, 8)}...</strong>
+        </div>
+        <div class="summary-line">
+          <span>Total a Transferir:</span>
+          <strong class="price-val">{formatCurrency(parseFloat(total))}</strong>
+        </div>
+      </div>
+
+      <div class="simulation-actions">
+        <button class="btn btn-success sim-btn" id="btn-approve" data-order-id={orderId}>
+          Simular Pago Exitoso (Aprobar) ✅
+        </button>
+        <button class="btn btn-danger sim-btn" id="btn-reject" data-order-id={orderId}>
+          Simular Pago Fallido (Rechazar/Cancelar) ❌
+        </button>
+      </div>
+      
+      <p class="disclaimer">Al pulsar cualquiera de los botones, se disparará el webhook de confirmación interno actualizando la base de datos local SQLite.</p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const btnApprove = document.getElementById('btn-approve');
+  const btnReject = document.getElementById('btn-reject');
+
+  async function processCallback(orderId: string, status: string) {
+    if (btnApprove) btnApprove.setAttribute('disabled', 'true');
+    if (btnReject) btnReject.setAttribute('disabled', 'true');
+
+    try {
+      const response = await fetch('/api/checkout/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId,
+          status
+        })
+      });
+
+      if (response.ok) {
+        window.location.href = `/checkout/confirmacion?orderId=${orderId}&status=${status}`;
+      } else {
+        alert('Fallo de comunicación con la base de datos del CMS.');
+        if (btnApprove) btnApprove.removeAttribute('disabled');
+        if (btnReject) btnReject.removeAttribute('disabled');
+      }
+    } catch (err) {
+      alert('Error de red al conectar al callback.');
+      console.error(err);
+    }
+  }
+
+  if (btnApprove) {
+    btnApprove.addEventListener('click', () => {
+      const orderId = btnApprove.getAttribute('data-order-id')!;
+      processCallback(orderId, 'success');
+    });
+  }
+
+  if (btnReject) {
+    btnReject.addEventListener('click', () => {
+      const orderId = btnReject.getAttribute('data-order-id')!;
+      processCallback(orderId, 'failure');
+    });
+  }
+</script>
+
+<style>
+  .simulation-container {
+    max-width: 550px;
+    margin: 60px auto;
+  }
+
+  .simulation-card {
+    padding: 40px;
+    text-align: center;
+    background: hsla(222, 25%, 8%, 0.9);
+  }
+
+  .simulation-header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+
+  .sim-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: hsla(38, 92%, 50%, 0.15);
+    border: 1px solid hsla(38, 92%, 50%, 0.3);
+    color: var(--color-warning);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .sim-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 30px;
+  }
+
+  .payment-summary {
+    background: hsla(222, 25%, 4%, 0.5);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 35px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+  }
+
+  .price-val {
+    font-family: var(--font-display);
+    color: var(--color-secondary-light);
+    font-size: 1.25rem;
+  }
+
+  .simulation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .sim-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .btn-success {
+    background: var(--color-success);
+    color: white;
+  }
+
+  .btn-success:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+  }
+
+  .disclaimer {
+    font-size: 0.75rem;
+    color: var(--text-muted-dark);
+    line-height: 1.4;
+  }
+</style>

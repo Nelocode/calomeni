@@ -1,0 +1,477 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db, postsPages } from '../../../../db/client';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/paginas');
+}
+
+// Consultar la página existente
+const result = await db.select().from(postsPages).where(eq(postsPages.id, id)).limit(1);
+const pageData = result[0];
+
+if (!pageData) {
+  return Astro.redirect('/admin/paginas');
+}
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const title = formData.get('title')?.toString().trim();
+    const slug = formData.get('slug')?.toString().trim();
+    const type = formData.get('type')?.toString();
+    const published = formData.get('published') === '1' ? 1 : 0;
+    const content = formData.get('content')?.toString() || '';
+    const metaTitle = formData.get('metaTitle')?.toString().trim() || null;
+    const metaDescription = formData.get('metaDescription')?.toString().trim() || null;
+
+    if (!title || !slug || !type) {
+      errorMsg = 'El título, el slug y el tipo de contenido son campos requeridos.';
+    } else {
+      // Validar si el slug ya existe en OTRA página
+      const existing = await db
+        .select()
+        .from(postsPages)
+        .where(eq(postsPages.slug, slug))
+        .limit(2); // Buscamos si hay coincidencias
+
+      const isSlugConflict = existing.some(item => item.id !== id);
+
+      if (isSlugConflict) {
+        errorMsg = 'Ya existe otra página o post con ese slug.';
+      } else {
+        await db
+          .update(postsPages)
+          .set({
+            title,
+            slug,
+            type,
+            content,
+            published,
+            metaTitle,
+            metaDescription,
+            updatedAt: Date.now(),
+          })
+          .where(eq(postsPages.id, id));
+
+        return Astro.redirect('/admin/paginas');
+      }
+    }
+  } catch (err) {
+    errorMsg = 'Ocurrió un error al guardar el contenido.';
+    console.error(err);
+  }
+}
+---
+
+<AdminLayout title="Editar Contenido">
+  {errorMsg && (
+    <div class="alert alert-error">
+      <span>⚠️</span>
+      <p>{errorMsg}</p>
+    </div>
+  )}
+
+  <form method="POST" class="content-form">
+    <div class="form-layout">
+      <!-- Columna Principal: Editor de Contenido -->
+      <div class="main-column">
+        <div class="glass-panel form-card">
+          <div class="form-group">
+            <label for="title" class="form-label">Título</label>
+            <input 
+              type="text" 
+              id="title" 
+              name="title" 
+              class="form-input title-input" 
+              value={pageData.title}
+              placeholder="Escribe el título aquí..." 
+              required 
+            />
+          </div>
+
+          <!-- Zona del Editor TipTap -->
+          <div class="form-group">
+            <label class="form-label">Contenido</label>
+            <div class="tiptap-editor-container">
+              <!-- Barra de herramientas -->
+              <div class="editor-toolbar" id="toolbar">
+                <button type="button" class="toolbar-btn" data-action="bold" title="Negrita"><b>B</b></button>
+                <button type="button" class="toolbar-btn" data-action="italic" title="Cursiva"><i>I</i></button>
+                <button type="button" class="toolbar-btn" data-action="strike" title="Tachado"><s>S</s></button>
+                <div class="toolbar-divider"></div>
+                <button type="button" class="toolbar-btn" data-action="h1" title="Título 1">H1</button>
+                <button type="button" class="toolbar-btn" data-action="h2" title="Título 2">H2</button>
+                <button type="button" class="toolbar-btn" data-action="h3" title="Título 3">H3</button>
+                <div class="toolbar-divider"></div>
+                <button type="button" class="toolbar-btn" data-action="bulletList" title="Lista Viñetas">• List</button>
+                <button type="button" class="toolbar-btn" data-action="orderedList" title="Lista Numerada">1. List</button>
+                <button type="button" class="toolbar-btn" data-action="blockquote" title="Cita">“ Cita</button>
+                <button type="button" class="toolbar-btn" data-action="codeBlock" title="Código">&lt;/&gt;</button>
+                <div class="toolbar-divider"></div>
+                <button type="button" class="toolbar-btn" data-action="undo" title="Deshacer">↩️</button>
+                <button type="button" class="toolbar-btn" data-action="redo" title="Rehacer">↪️</button>
+              </div>
+
+              <!-- Area del editor editable -->
+              <div class="editor-content-area" id="editor"></div>
+            </div>
+            <!-- El valor inicial se inyecta en el value del input oculto -->
+            <input type="hidden" name="content" id="content-input" value={pageData.content} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Lateral: Configuración y SEO -->
+      <div class="sidebar-column">
+        <!-- Tarjeta de Publicación -->
+        <div class="glass-panel form-card sidebar-card">
+          <h3>Publicación</h3>
+          <div class="form-group">
+            <label for="type" class="form-label">Tipo de Contenido</label>
+            <select id="type" name="type" class="form-input">
+              <option value="page" selected={pageData.type === 'page'}>Páginas Estáticas</option>
+              <option value="post" selected={pageData.type === 'post'}>Blog Post</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="slug" class="form-label">Ruta / Slug</label>
+            <input 
+              type="text" 
+              id="slug" 
+              name="slug" 
+              class="form-input slug-input" 
+              value={pageData.slug}
+              placeholder="nombre-de-la-pagina" 
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="published" class="form-label">Estado</label>
+            <select id="published" name="published" class="form-input">
+              <option value="0" selected={pageData.published === 0}>Borrador</option>
+              <option value="1" selected={pageData.published === 1}>Publicado</option>
+            </select>
+          </div>
+
+          <div class="sidebar-actions">
+            <button type="submit" class="btn btn-primary save-btn">Guardar Cambios</button>
+            <a href="/admin/paginas" class="btn btn-secondary cancel-btn">Cancelar</a>
+          </div>
+        </div>
+
+        <!-- Tarjeta de SEO -->
+        <div class="glass-panel form-card sidebar-card">
+          <h3>SEO y Metadatos</h3>
+          
+          <div class="form-group">
+            <label for="metaTitle" class="form-label">Título SEO (Meta Title)</label>
+            <input 
+              type="text" 
+              id="metaTitle" 
+              name="metaTitle" 
+              class="form-input" 
+              value={pageData.metaTitle}
+              placeholder="Título para buscadores" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="metaDescription" class="form-label">Descripción SEO (Meta Description)</label>
+            <textarea 
+              id="metaDescription" 
+              name="metaDescription" 
+              class="form-input text-area-seo" 
+              placeholder="Resumen corto de la página para Google..." 
+              rows="3"
+            >{pageData.metaDescription}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</AdminLayout>
+
+<script>
+  import { Editor } from '@tiptap/core';
+  import StarterKit from '@tiptap/starter-kit';
+
+  // --- LÓGICA DE AUTO-SLUGIFY ---
+  const titleInput = document.getElementById('title') as HTMLInputElement;
+  const slugInput = document.getElementById('slug') as HTMLInputElement;
+  
+  // En edición no autogeneramos el slug a menos que el título cambie y estemos dispuestos
+  // o el slug esté vacío. Así evitamos romper URLs viejas accidentalmente.
+  let autoSlug = false; 
+
+  if (titleInput && slugInput) {
+    titleInput.addEventListener('input', () => {
+      if (autoSlug) {
+        slugInput.value = slugify(titleInput.value);
+      }
+    });
+
+    slugInput.addEventListener('input', () => {
+      autoSlug = slugInput.value === '';
+    });
+  }
+
+  function slugify(text: string) {
+    return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
+  }
+
+  // --- INICIALIZACIÓN DE TIPTAP ---
+  const editorElement = document.getElementById('editor');
+  const contentInput = document.getElementById('content-input') as HTMLInputElement;
+
+  if (editorElement && contentInput) {
+    const editor = new Editor({
+      element: editorElement,
+      extensions: [
+        StarterKit.configure({
+          heading: {
+            levels: [1, 2, 3]
+          }
+        })
+      ],
+      // Inyectar el valor actual del contenido guardado
+      content: contentInput.value || '<p></p>',
+      onUpdate({ editor }) {
+        contentInput.value = editor.getHTML();
+      }
+    });
+
+    // Barra de herramientas
+    const toolbar = document.getElementById('toolbar');
+    if (toolbar) {
+      toolbar.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.toolbar-btn');
+        if (!btn) return;
+
+        const action = btn.getAttribute('data-action');
+        if (!action) return;
+
+        if (action === 'bold') editor.chain().focus().toggleBold().run();
+        if (action === 'italic') editor.chain().focus().toggleItalic().run();
+        if (action === 'strike') editor.chain().focus().toggleStrike().run();
+        if (action === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
+        if (action === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+        if (action === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
+        if (action === 'bulletList') editor.chain().focus().toggleBulletList().run();
+        if (action === 'orderedList') editor.chain().focus().toggleOrderedList().run();
+        if (action === 'blockquote') editor.chain().focus().toggleBlockquote().run();
+        if (action === 'codeBlock') editor.chain().focus().toggleCodeBlock().run();
+        if (action === 'undo') editor.chain().focus().undo().run();
+        if (action === 'redo') editor.chain().focus().redo().run();
+
+        updateButtonStates();
+      });
+    }
+
+    function updateButtonStates() {
+      const buttons = document.querySelectorAll('.toolbar-btn');
+      buttons.forEach(btn => {
+        const action = btn.getAttribute('data-action');
+        if (!action) return;
+        
+        let isActive = false;
+        
+        if (action === 'bold') isActive = editor.isActive('bold');
+        if (action === 'italic') isActive = editor.isActive('italic');
+        if (action === 'strike') isActive = editor.isActive('strike');
+        if (action === 'h1') isActive = editor.isActive('heading', { level: 1 });
+        if (action === 'h2') isActive = editor.isActive('heading', { level: 2 });
+        if (action === 'h3') isActive = editor.isActive('heading', { level: 3 });
+        if (action === 'bulletList') isActive = editor.isActive('bulletList');
+        if (action === 'orderedList') isActive = editor.isActive('orderedList');
+        if (action === 'blockquote') isActive = editor.isActive('blockquote');
+        if (action === 'codeBlock') isActive = editor.isActive('codeBlock');
+
+        if (isActive) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    editor.on('transaction', () => {
+      updateButtonStates();
+    });
+  }
+</script>
+
+<style>
+  /* Se heredan todos los estilos generales definidos en crear.astro */
+  .content-form {
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .form-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .form-card {
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .title-input {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    padding: 14px 20px;
+    border-radius: var(--radius-md);
+  }
+
+  .tiptap-editor-container {
+    background: hsla(222, 25%, 4%, 0.6);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    background: hsla(222, 25%, 8%, 0.8);
+    border-bottom: 1px solid var(--border-light);
+    align-items: center;
+  }
+
+  .toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.85rem;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+
+  .toolbar-btn:hover {
+    background: var(--bg-surface);
+    color: var(--text-main);
+  }
+
+  .toolbar-btn.active {
+    background: var(--gradient-primary);
+    color: var(--bg-main);
+    box-shadow: 0 0 10px hsla(263, 90%, 63%, 0.3);
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-light);
+    margin: 0 4px;
+  }
+
+  .editor-content-area {
+    padding: 24px;
+    min-height: 400px;
+    color: var(--text-main);
+    font-size: 1.05rem;
+  }
+
+  :global(.ProseMirror) {
+    outline: none;
+    min-height: 400px;
+    height: 100%;
+  }
+
+  :global(.ProseMirror > * + *) {
+    margin-top: 0.8em;
+  }
+
+  :global(.ProseMirror h1) { font-size: 1.8rem; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--text-main); }
+  :global(.ProseMirror h2) { font-size: 1.4rem; margin-top: 1.4em; margin-bottom: 0.4em; color: var(--text-main); }
+  :global(.ProseMirror h3) { font-size: 1.2rem; margin-top: 1.3em; margin-bottom: 0.3em; }
+  :global(.ProseMirror p) { line-height: 1.6; color: var(--text-muted); }
+  :global(.ProseMirror ul), :global(.ProseMirror ol) { padding-left: 24px; color: var(--text-muted); }
+  
+  :global(.ProseMirror blockquote) {
+    border-left: 4px solid var(--color-primary);
+    padding-left: 16px;
+    margin-left: 0;
+    font-style: italic;
+    color: var(--text-main);
+  }
+
+  :global(.ProseMirror pre) {
+    background: hsla(222, 25%, 3%, 0.8);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-family: monospace;
+    color: var(--color-secondary-light);
+    overflow-x: auto;
+  }
+
+  .sidebar-card { padding: 20px; }
+  .sidebar-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 10px;
+  }
+
+  .sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .save-btn { width: 100%; padding: 12px; }
+  .cancel-btn { width: 100%; padding: 10px; font-size: 0.9rem; }
+  .text-area-seo { resize: none; }
+
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .alert-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    border: 1px solid hsla(350, 89%, 60%, 0.3);
+    color: hsl(350, 100%, 75%);
+  }
+</style>

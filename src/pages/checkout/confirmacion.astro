@@ -1,0 +1,143 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export const prerender = false;
+
+const orderId = Astro.url.searchParams.get('orderId') || '';
+const status = Astro.url.searchParams.get('status') || '';
+
+const isSuccess = status === 'success';
+---
+
+<Layout title={isSuccess ? "¡Pedido Confirmado!" : "Pago Fallido | Tienda"}>
+  <div class="confirmation-container">
+    <div class="confirmation-card glass-panel animate-fade-in">
+      {isSuccess ? (
+        <div class="success-view">
+          <div class="confirm-icon icon-success">✓</div>
+          <h1>¡Gracias por tu Compra!</h1>
+          <p class="description">Tu pago ha sido procesado con éxito. Hemos registrado tu orden en nuestro CMS base.</p>
+          
+          <div class="order-box">
+            <span class="label">ID de la Orden:</span>
+            <code class="order-id-code">{orderId}</code>
+          </div>
+
+          <div class="actions">
+            <a href="/productos" class="btn btn-primary">Volver a la Tienda</a>
+          </div>
+        </div>
+      ) : (
+        <div class="error-view">
+          <div class="confirm-icon icon-error">✕</div>
+          <h1>El Pago no fue Aprobado</h1>
+          <p class="description">La transacción fue rechazada, cancelada o falló durante el procesamiento en la pasarela.</p>
+          
+          <div class="actions">
+            <a href="/checkout" class="btn btn-primary">Intentar Nuevamente</a>
+            <a href="/productos" class="btn btn-secondary">Volver al Catálogo</a>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<!-- Script para limpiar el carrito si la compra fue exitosa -->
+<script define:vars={{ isSuccess }}>
+  if (isSuccess) {
+    localStorage.removeItem('cart');
+    // Despachar evento para notificar al contador del navbar flotante
+    window.dispatchEvent(new CustomEvent('cart-updated'));
+  }
+</script>
+
+<style>
+  .confirmation-container {
+    max-width: 600px;
+    margin: 60px auto;
+  }
+
+  .confirmation-card {
+    padding: 50px 40px;
+    text-align: center;
+    background: hsla(222, 25%, 8%, 0.85);
+  }
+
+  .confirm-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+  }
+
+  .icon-success {
+    background-color: hsla(142, 70%, 45%, 0.15);
+    color: var(--color-success);
+    border: 2px solid var(--color-success);
+    box-shadow: 0 0 20px hsla(142, 70%, 45%, 0.2);
+  }
+
+  .icon-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    color: var(--color-danger);
+    border: 2px solid var(--color-danger);
+    box-shadow: 0 0 20px hsla(350, 89%, 60%, 0.2);
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .description {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 30px;
+  }
+
+  .order-box {
+    background: hsla(222, 25%, 4%, 0.5);
+    border: 1px solid var(--border-light);
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 35px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+  }
+
+  .order-box .label {
+    font-size: 0.8rem;
+    color: var(--text-muted-dark);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .order-id-code {
+    font-size: 0.9rem;
+    color: var(--color-secondary-light);
+    word-break: break-all;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .actions .btn {
+    padding: 12px 28px;
+    font-size: 0.95rem;
+  }
+</style>

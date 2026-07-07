@@ -1,0 +1,308 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db, products } from '../../../../db/client';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/productos');
+}
+
+// Consultar el producto existente
+const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
+const productData = result[0];
+
+if (!productData) {
+  return Astro.redirect('/admin/productos');
+}
+
+// Extraer la primera imagen de la base de datos (guardada como array JSON)
+const imagesArray = JSON.parse(productData.images || '[]');
+const currentImageUrl = imagesArray[0] || '';
+
+let errorMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const name = formData.get('name')?.toString().trim();
+    const slug = formData.get('slug')?.toString().trim();
+    const description = formData.get('description')?.toString().trim();
+    const priceRaw = formData.get('price')?.toString();
+    const stockRaw = formData.get('stock')?.toString();
+    const imageUrl = formData.get('imageUrl')?.toString().trim();
+    const published = formData.get('published') === '1' ? 1 : 0;
+
+    const price = parseFloat(priceRaw || '0');
+    const stock = parseInt(stockRaw || '0', 10);
+
+    if (!name || !slug || !description || isNaN(price)) {
+      errorMsg = 'El nombre, slug, descripción y precio son campos requeridos válidos.';
+    } else {
+      // Validar si el slug ya existe en otro producto
+      const existing = await db
+        .select()
+        .from(products)
+        .where(eq(products.slug, slug))
+        .limit(2);
+
+      const isSlugConflict = existing.some(item => item.id !== id);
+
+      if (isSlugConflict) {
+        errorMsg = 'Ya existe otro producto con ese slug.';
+      } else {
+        const images = imageUrl ? JSON.stringify([imageUrl]) : JSON.stringify([]);
+        
+        await db
+          .update(products)
+          .set({
+            name,
+            slug,
+            description,
+            price,
+            stock,
+            images,
+            published,
+            updatedAt: Date.now(),
+          })
+          .where(eq(products.id, id));
+
+        return Astro.redirect('/admin/productos');
+      }
+    }
+  } catch (err) {
+    errorMsg = 'Ocurrió un error al guardar el producto.';
+    console.error(err);
+  }
+}
+---
+
+<AdminLayout title="Editar Producto">
+  {errorMsg && (
+    <div class="alert alert-error">
+      <span>⚠️</span>
+      <p>{errorMsg}</p>
+    </div>
+  )}
+
+  <form method="POST" class="content-form">
+    <div class="form-layout">
+      <!-- Columna Principal -->
+      <div class="main-column">
+        <div class="glass-panel form-card">
+          <div class="form-group">
+            <label for="name" class="form-label">Nombre del Producto</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-input title-input" 
+              value={productData.name}
+              placeholder="ej. Silla Ergonómica Premium" 
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="form-label">Descripción</label>
+            <textarea 
+              id="description" 
+              name="description" 
+              class="form-input text-area-desc" 
+              placeholder="Escribe las especificaciones y descripción del producto..." 
+              rows="8"
+              required
+            >{productData.description}</textarea>
+          </div>
+        </div>
+
+        <div class="glass-panel form-card">
+          <h3>Multimedia</h3>
+          <div class="form-group">
+            <label for="imageUrl" class="form-label">URL de Imagen del Producto</label>
+            <input 
+              type="url" 
+              id="imageUrl" 
+              name="imageUrl" 
+              class="form-input" 
+              value={currentImageUrl}
+              placeholder="https://images.unsplash.com/photo-..." 
+            />
+            <p class="input-help">Introduce la URL de una imagen para el producto.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Lateral -->
+      <div class="sidebar-column">
+        <div class="glass-panel form-card sidebar-card">
+          <h3>Inventario y Precios</h3>
+          
+          <div class="form-group">
+            <label for="price" class="form-label">Precio (COP)</label>
+            <input 
+              type="number" 
+              id="price" 
+              name="price" 
+              class="form-input" 
+              value={productData.price}
+              placeholder="450000" 
+              min="0"
+              step="any"
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="stock" class="form-label">Unidades en Inventario (Stock)</label>
+            <input 
+              type="number" 
+              id="stock" 
+              name="stock" 
+              class="form-input" 
+              value={productData.stock}
+              placeholder="10" 
+              min="0"
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="slug" class="form-label">Ruta / Slug</label>
+            <input 
+              type="text" 
+              id="slug" 
+              name="slug" 
+              class="form-input slug-input" 
+              value={productData.slug}
+              placeholder="silla-ergonomica-premium" 
+              required 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="published" class="form-label">Estado de Visibilidad</label>
+            <select id="published" name="published" class="form-input">
+              <option value="1" selected={productData.published === 1}>Activo (Visible en tienda)</option>
+              <option value="0" selected={productData.published === 0}>Inactivo (Oculto)</option>
+            </select>
+          </div>
+
+          <div class="sidebar-actions">
+            <button type="submit" class="btn btn-primary save-btn">Guardar Cambios</button>
+            <a href="/admin/productos" class="btn btn-secondary cancel-btn">Cancelar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</AdminLayout>
+
+<script>
+  const nameInput = document.getElementById('name') as HTMLInputElement;
+  const slugInput = document.getElementById('slug') as HTMLInputElement;
+  let autoSlug = false;
+
+  if (nameInput && slugInput) {
+    nameInput.addEventListener('input', () => {
+      if (autoSlug) {
+        slugInput.value = slugify(nameInput.value);
+      }
+    });
+
+    slugInput.addEventListener('input', () => {
+      autoSlug = slugInput.value === '';
+    });
+  }
+
+  function slugify(text: string) {
+    return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
+  }
+</script>
+
+<style>
+  /* Hereda todos los estilos de crear.astro de productos */
+  .content-form {
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .form-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .form-card {
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .title-input {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    padding: 14px 20px;
+    border-radius: var(--radius-md);
+  }
+
+  .text-area-desc {
+    resize: vertical;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .input-help {
+    font-size: 0.78rem;
+    color: var(--text-muted-dark);
+    margin-top: 4px;
+  }
+
+  .sidebar-card { padding: 20px; }
+  .sidebar-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 10px;
+  }
+
+  .sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .save-btn { width: 100%; padding: 12px; }
+  .cancel-btn { width: 100%; padding: 10px; font-size: 0.9rem; }
+
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .alert-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    border: 1px solid hsla(350, 89%, 60%, 0.3);
+    color: hsl(350, 100%, 75%);
+  }
+</style>

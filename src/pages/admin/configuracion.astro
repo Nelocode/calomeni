@@ -1,0 +1,201 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSetting, setSetting } from '../../lib/settings';
+
+export const prerender = false;
+
+let successMsg = '';
+let errorMsg = '';
+
+// Leer configuración actual de la tienda (por defecto true)
+let isStoreEnabled = (await getSetting('enable_store', 'true')) === 'true';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const enableStoreInput = formData.get('enableStore') === 'on' ? 'true' : 'false';
+
+    await setSetting('enable_store', enableStoreInput);
+    isStoreEnabled = enableStoreInput === 'true';
+    successMsg = 'Configuración guardada correctamente.';
+  } catch (err) {
+    errorMsg = 'Ocurrió un error al guardar la configuración.';
+    console.error(err);
+  }
+}
+---
+
+<AdminLayout title="Configuración del Sitio">
+  {successMsg && (
+    <div class="alert alert-success">
+      <span>✅</span>
+      <p>{successMsg}</p>
+    </div>
+  )}
+
+  {errorMsg && (
+    <div class="alert alert-error">
+      <span>⚠️</span>
+      <p>{errorMsg}</p>
+    </div>
+  )}
+
+  <div class="config-container max-width-card">
+    <form method="POST" class="glass-panel config-card animate-fade-in">
+      <h2>Preferencias del Sistema</h2>
+      <p class="section-desc">Activa o desactiva módulos del CMS de acuerdo con las necesidades del proyecto.</p>
+
+      <div class="config-row">
+        <div class="config-details">
+          <h4>Habilitar Tienda Virtual (E-commerce)</h4>
+          <p>Activa el catálogo de productos, el carrito de compras, los flujos de pago y la sección de pedidos en el panel de administración.</p>
+        </div>
+        <div class="switch-container">
+          <label class="switch">
+            <input type="checkbox" name="enableStore" checked={isStoreEnabled} />
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary save-config-btn">Guardar Preferencias</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .config-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .config-card {
+    padding: 35px;
+  }
+
+  .config-card h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .section-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+
+  .config-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 35px;
+  }
+
+  .config-details h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 6px;
+  }
+
+  .config-details p {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .save-config-btn {
+    padding: 12px 28px;
+    font-size: 0.95rem;
+  }
+
+  /* --- SWITCH STYLES (SLIDER INTERACTIVO PREMIUM) --- */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: hsla(222, 25%, 15%, 0.6);
+    border: 1px solid var(--border-light);
+    transition: .4s;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-muted);
+    transition: .4s;
+  }
+
+  input:checked + .slider {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    box-shadow: 0 0 10px hsla(263, 90%, 63%, 0.35);
+  }
+
+  input:checked + .slider:before {
+    background-color: var(--bg-main);
+    transform: translateX(26px);
+  }
+
+  .slider.round {
+    border-radius: 34px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
+  }
+
+  /* Alertas */
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .alert-success {
+    background-color: hsla(142, 70%, 45%, 0.15);
+    border: 1px solid hsla(142, 70%, 45%, 0.3);
+    color: hsl(142, 100%, 75%);
+  }
+
+  .alert-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    border: 1px solid hsla(350, 89%, 60%, 0.3);
+    color: hsl(350, 100%, 75%);
+  }
+</style>

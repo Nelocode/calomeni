@@ -1,0 +1,334 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+---
+
+<Layout title="Checkout | Tienda">
+  <div class="checkout-container">
+    <header class="checkout-header">
+      <h1>Finalizar Compra</h1>
+      <p class="subtitle">Completa tus datos para procesar el pago seguro de tu pedido.</p>
+      <div class="header-divider"></div>
+    </header>
+
+    <div class="checkout-layout">
+      <!-- Columna Formulario -->
+      <div class="checkout-column-form">
+        <div class="glass-panel checkout-card">
+          <h2>Datos del Comprador</h2>
+          
+          <div id="error-message-box" class="alert alert-error" style="display: none;">
+            <span>⚠️</span>
+            <p id="error-text"></p>
+          </div>
+
+          <form id="checkout-form">
+            <div class="form-group">
+              <label for="name" class="form-label">Nombre Completo</label>
+              <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="form-input" 
+                placeholder="ej. Juan Pérez" 
+                required 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="email" class="form-label">Correo Electrónico</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="form-input" 
+                placeholder="juan@email.com" 
+                required 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="address" class="form-label">Dirección de Envío</label>
+              <input 
+                type="text" 
+                id="address" 
+                name="address" 
+                class="form-input" 
+                placeholder="ej. Calle 100 #15-30, Bogotá" 
+                required 
+              />
+            </div>
+
+            <button type="submit" class="btn btn-primary pay-btn" id="pay-submit-btn">
+              Proceder al Pago Seguro 💳
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Columna Resumen -->
+      <div class="checkout-column-summary">
+        <div class="glass-panel checkout-card">
+          <h2>Resumen del Pedido</h2>
+          
+          <div class="checkout-items-list" id="summary-items">
+            <!-- Rellenado dinámicamente -->
+          </div>
+
+          <div class="checkout-summary-footer">
+            <div class="summary-row">
+              <span>Envío:</span>
+              <span class="free-shipping">Gratis</span>
+            </div>
+            <div class="summary-row total-row">
+              <span>Total a pagar:</span>
+              <strong id="summary-total-amount">$0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    quantity: number;
+  }
+
+  // Elementos
+  const summaryItems = document.getElementById('summary-items');
+  const summaryTotal = document.getElementById('summary-total-amount');
+  const checkoutForm = document.getElementById('checkout-form') as HTMLFormElement;
+  const payBtn = document.getElementById('pay-submit-btn') as HTMLButtonElement;
+  const errorBox = document.getElementById('error-message-box');
+  const errorText = document.getElementById('error-text');
+
+  // Cargar items
+  let cart: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
+
+  const formatCurrencyJS = (value: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  function renderSummary() {
+    if (cart.length === 0) {
+      window.location.href = '/productos';
+      return;
+    }
+
+    if (summaryItems) {
+      summaryItems.innerHTML = cart.map(item => `
+        <div class="summary-item-row">
+          <span class="item-qty-name"><strong>${item.quantity}x</strong> ${item.name}</span>
+          <span class="item-subtotal">${formatCurrencyJS(item.price * item.quantity)}</span>
+        </div>
+      `).join('');
+    }
+
+    if (summaryTotal) {
+      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      summaryTotal.textContent = formatCurrencyJS(total);
+    }
+  }
+
+  if (checkoutForm && payBtn) {
+    checkoutForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      payBtn.disabled = true;
+      payBtn.textContent = 'Procesando checkout... ⚙️';
+      if (errorBox) errorBox.setAttribute('style', 'display: none;');
+
+      const formData = new FormData(checkoutForm);
+      const name = formData.get('name')?.toString();
+      const email = formData.get('email')?.toString();
+      
+      try {
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerName: name,
+            customerEmail: email,
+            cartItems: cart
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success && data.paymentUrl) {
+          // Redirigir a la pasarela (o simulación)
+          window.location.href = data.paymentUrl;
+        } else {
+          showError(data.error || 'Ocurrió un fallo en el servidor.');
+        }
+      } catch (err) {
+        showError('Fallo de red al intentar procesar la transacción.');
+        console.error(err);
+      }
+    });
+  }
+
+  function showError(msg: string) {
+    if (errorBox && errorText && payBtn) {
+      errorText.textContent = msg;
+      errorBox.removeAttribute('style');
+      payBtn.disabled = false;
+      payBtn.textContent = 'Proceder al Pago Seguro 💳';
+    }
+  }
+
+  renderSummary();
+</script>
+
+<style>
+  .checkout-container {
+    max-width: 1100px;
+    margin: 40px auto;
+  }
+
+  .checkout-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .checkout-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+
+  .checkout-header .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+  }
+
+  .header-divider {
+    width: 80px;
+    height: 4px;
+    background: var(--gradient-primary);
+    margin: 0 auto;
+    border-radius: var(--radius-full);
+  }
+
+  .checkout-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 30px;
+    align-items: start;
+  }
+
+  .checkout-card {
+    padding: 30px;
+  }
+
+  .checkout-card h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 12px;
+  }
+
+  .pay-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 14px;
+    font-size: 1.05rem;
+  }
+
+  /* Items del Resumen */
+  .checkout-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .summary-item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+  }
+
+  .item-qty-name {
+    color: var(--text-main);
+  }
+
+  .item-qty-name strong {
+    color: var(--color-primary-light);
+  }
+
+  .item-subtotal {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  /* Footer del Resumen */
+  .checkout-summary-footer {
+    border-top: 1px solid var(--border-light);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  .free-shipping {
+    color: var(--color-success);
+    font-weight: 700;
+  }
+
+  .total-row {
+    font-size: 1.1rem;
+    color: var(--text-main);
+    padding-top: 8px;
+  }
+
+  .total-row strong {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-secondary-light);
+  }
+
+  /* Alertas */
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .alert-error {
+    background-color: hsla(350, 89%, 60%, 0.15);
+    border: 1px solid hsla(350, 89%, 60%, 0.3);
+    color: hsl(350, 100%, 75%);
+  }
+</style>

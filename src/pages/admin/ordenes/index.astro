@@ -1,0 +1,182 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db, orders } from '../../../db/client';
+import { desc } from 'drizzle-orm';
+
+export const prerender = false;
+
+// Consultar todas las órdenes de compra en SQLite
+const list = await db
+  .select()
+  .from(orders)
+  .orderBy(desc(orders.createdAt));
+
+// Formateador de COP
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(value);
+};
+---
+
+<AdminLayout title="Pedidos y Transacciones">
+  <div class="page-actions-header">
+    <p class="count-label">Total: <strong>{list.length}</strong> pedidos procesados</p>
+  </div>
+
+  <div class="dashboard-card glass-panel">
+    {list.length === 0 ? (
+      <div class="empty-state">
+        <span class="empty-icon">💳</span>
+        <p>No se han registrado transacciones.</p>
+        <p class="empty-sub">Los pedidos que realicen tus clientes aparecerán listados aquí en tiempo real.</p>
+      </div>
+    ) : (
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID Pedido</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Pasarela</th>
+              <th>Productos Comprados</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((order) => {
+              const itemsArray = JSON.parse(order.items || '[]');
+              return (
+                <tr>
+                  <td>
+                    <code class="order-id-badge" title={order.id}>{order.id.slice(0, 8)}...</code>
+                  </td>
+                  <td>
+                    <div class="customer-info">
+                      <span class="customer-name">{order.customerName}</span>
+                      <span class="customer-email">{order.customerEmail}</span>
+                    </div>
+                  </td>
+                  <td>{new Date(order.createdAt).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                  <td>
+                    <span class="provider-badge">
+                      {order.paymentProvider === 'mock' ? 'Simulador (Mock)' : order.paymentProvider}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="items-list-cell">
+                      {itemsArray.map((item: any) => (
+                        <div class="item-pill">
+                          <strong>{item.quantity}x</strong> {item.name}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td class="order-total">{formatCurrency(order.total)}</td>
+                  <td>
+                    <span class={`status-badge status-${order.status}`}>
+                      {order.status === 'paid' ? 'Pagado' : 
+                       order.status === 'shipped' ? 'Enviado' : 
+                       order.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</AdminLayout>
+
+<style>
+  .page-actions-header {
+    margin-bottom: 24px;
+  }
+
+  .count-label {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .order-id-badge {
+    background: hsla(222, 25%, 5%, 0.5);
+    border: 1px solid var(--border-light);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    color: var(--text-main);
+  }
+
+  .provider-badge {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    background: hsla(222, 25%, 15%, 0.3);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-light);
+  }
+
+  /* Listado de Productos en Celda */
+  .items-list-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 250px;
+  }
+
+  .item-pill {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-pill strong {
+    color: var(--color-primary-light);
+  }
+
+  .customer-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .customer-name {
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .customer-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .order-total {
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: var(--color-secondary-light);
+  }
+
+  /* Badges de Estado */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  .status-pending { background-color: hsla(38, 92%, 50%, 0.15); color: var(--color-warning); }
+  .status-paid { background-color: hsla(142, 70%, 45%, 0.15); color: var(--color-success); }
+  .status-shipped { background-color: hsla(190, 95%, 45%, 0.15); color: var(--color-secondary-light); }
+  .status-cancelled { background-color: hsla(350, 89%, 60%, 0.15); color: var(--color-danger); }
+</style>

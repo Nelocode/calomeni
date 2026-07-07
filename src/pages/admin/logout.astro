@@ -1,0 +1,21 @@
+---
+import { destroySession } from '../../lib/auth';
+
+export const prerender = false;
+
+if (Astro.request.method === 'POST') {
+  const sessionId = Astro.cookies.get('session_id')?.value;
+  
+  if (sessionId) {
+    // Eliminar sesión en la base de datos
+    await destroySession(sessionId);
+    
+    // Borrar la cookie
+    Astro.cookies.delete('session_id', {
+      path: '/',
+    });
+  }
+}
+
+return Astro.redirect('/admin/login');
+---

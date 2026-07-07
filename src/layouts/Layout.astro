@@ -1,0 +1,151 @@
+---
+import '../styles/global.css';
+
+import { getSetting } from '../lib/settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  canonicalURL?: string;
+}
+
+const { 
+  title, 
+  description = "CMS Base ultra-rápido, moderno y modular optimizado para SEO y e-commerce.", 
+  image = "/og-image.png",
+  canonicalURL = Astro.url.href
+} = Astro.props;
+
+const isStoreEnabled = (await getSetting('enable_store', 'true')) === 'true';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <!-- Metadatos Básicos -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- SEO Principal -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url.href} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.url)} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={Astro.url.href} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image, Astro.url)} />
+  </head>
+  <body>
+    <!-- Navbar simple premium -->
+    <header class="main-header glass-panel">
+      <div class="nav-container">
+        <a href="/" class="logo">
+          <span>CMS</span>Base
+        </a>
+        <nav class="nav-links">
+          <a href="/">Inicio</a>
+          {isStoreEnabled && <a href="/productos">Tienda</a>}
+          <a href="/blog">Blog</a>
+          <a href="/admin" class="btn btn-secondary nav-admin-btn">Admin</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <slot />
+    </main>
+
+    <footer class="main-footer">
+      <p>&copy; {new Date().getFullYear()} CMS Base. Hecho 100% a medida con tecnología moderna.</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .main-header {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    max-width: 1200px;
+    margin: 20px auto 0 auto;
+    padding: 14px 32px;
+    border-radius: var(--radius-full);
+  }
+  
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .logo span {
+    font-weight: 400;
+    color: var(--text-main);
+    -webkit-text-fill-color: initial;
+    margin-right: 2px;
+  }
+  
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  
+  .nav-links a:not(.btn) {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+  
+  .nav-links a:not(.btn):hover {
+    color: var(--color-secondary-light);
+  }
+  
+  .nav-admin-btn {
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    border-radius: var(--radius-full);
+  }
+  
+  .main-content {
+    flex: 1;
+    max-width: 1200px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 0 20px;
+    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  
+  .main-footer {
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 1px solid var(--border-light);
+    margin-top: 80px;
+    font-size: 0.9rem;
+    color: var(--text-muted-dark);
+  }
+</style>

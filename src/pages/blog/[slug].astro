@@ -1,0 +1,160 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { db, postsPages } from '../../db/client';
+import { eq, and } from 'drizzle-orm';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/blog');
+}
+
+// Buscar el post de blog publicado
+const result = await db
+  .select()
+  .from(postsPages)
+  .where(
+    and(
+      eq(postsPages.slug, slug),
+      eq(postsPages.type, 'post'),
+      eq(postsPages.published, 1)
+    )
+  )
+  .limit(1);
+
+const post = result[0];
+
+if (!post) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found'
+  });
+}
+---
+
+<Layout 
+  title={post.title} 
+  description={post.metaDescription || undefined}
+  metaTitle={post.metaTitle || undefined}
+>
+  <article class="blog-post-container">
+    <header class="post-header">
+      <div class="post-meta">
+        <span class="meta-item badge">Blog</span>
+        <span class="meta-item date">{new Date(post.createdAt).toLocaleDateString('es-CO', { dateStyle: 'long' })}</span>
+      </div>
+      <h1>{post.title}</h1>
+      <div class="header-divider"></div>
+    </header>
+    
+    <section class="post-content" set:html={post.content} />
+    
+    <footer class="post-footer">
+      <a href="/blog" class="btn btn-secondary">
+        <span>←</span> Volver al Blog
+      </a>
+    </footer>
+  </article>
+</Layout>
+
+<style>
+  .blog-post-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .post-header {
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .post-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+  }
+
+  .badge {
+    background: var(--gradient-primary);
+    color: var(--bg-main);
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .date {
+    color: var(--text-muted);
+  }
+
+  .post-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.15;
+  }
+
+  .header-divider {
+    width: 60px;
+    height: 4px;
+    background: var(--gradient-primary);
+    margin: 0 auto;
+    border-radius: var(--radius-full);
+  }
+
+  /* Estilos para el HTML inyectado */
+  .post-content {
+    font-size: 1.15rem;
+    line-height: 1.75;
+    color: var(--text-muted);
+  }
+
+  .post-content :global(> * + *) {
+    margin-top: 1.2em;
+  }
+
+  .post-content :global(h1) { font-size: 2.2rem; margin-top: 1.8em; margin-bottom: 0.6em; color: var(--text-main); font-family: var(--font-display); }
+  .post-content :global(h2) { font-size: 1.7rem; margin-top: 1.6em; margin-bottom: 0.5em; color: var(--text-main); font-family: var(--font-display); }
+  .post-content :global(h3) { font-size: 1.3rem; margin-top: 1.4em; margin-bottom: 0.4em; color: var(--text-main); }
+  .post-content :global(p) { margin-bottom: 1.2em; }
+  .post-content :global(ul), .post-content :global(ol) { padding-left: 28px; margin-bottom: 1.2em; }
+  .post-content :global(li) { margin-bottom: 0.4em; }
+
+  .post-content :global(blockquote) {
+    border-left: 4px solid var(--color-primary);
+    padding: 8px 20px;
+    margin: 24px 0;
+    font-style: italic;
+    background: hsla(222, 25%, 8%, 0.4);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--text-main);
+  }
+
+  .post-content :global(pre) {
+    background: hsla(222, 25%, 3%, 0.8);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    font-family: monospace;
+    color: var(--color-secondary-light);
+    overflow-x: auto;
+    margin: 24px 0;
+  }
+
+  .post-footer {
+    border-top: 1px solid var(--border-light);
+    margin-top: 60px;
+    padding-top: 30px;
+  }
+</style>

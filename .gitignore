@@ -1,0 +1,33 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# Local databases (SQLite)
+local.db
+local.db-journal
+*.db
+*.db-journal
+
+# Temporaries and Zips
+proyecto-cms.zip

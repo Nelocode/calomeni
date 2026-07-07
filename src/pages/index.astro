@@ -1,0 +1,278 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { db, postsPages } from '../db/client';
+import { eq, and } from 'drizzle-orm';
+import { getSetting } from '../lib/settings';
+
+export const prerender = false;
+
+// Consultar páginas estáticas públicas para mostrarlas como enlaces en el inicio
+const pages = await db
+  .select({ title: postsPages.title, slug: postsPages.slug })
+  .from(postsPages)
+  .where(
+    and(
+      eq(postsPages.type, 'page'),
+      eq(postsPages.published, 1)
+    )
+  );
+
+const isStoreEnabled = (await getSetting('enable_store', 'true')) === 'true';
+---
+
+<Layout title="CMS Base | Inicio">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-glow"></div>
+    <div class="hero-content animate-fade-in">
+      <div class="hero-tag">CMS Base & E-commerce Híbrido</div>
+      <h1>Crea Sitios Web Increíbles y <span>Competitivos</span></h1>
+      <p class="hero-description">
+        Una base lista para usar con generación estática para SEO impecable, panel de administración ultra limpio con editor enriquecido y soporte modular de pasarelas de pago colombianas.
+      </p>
+      <div class="hero-actions">
+        <a href="/admin" class="btn btn-primary btn-lg">Probar Administrador ➔</a>
+        <a href="/blog" class="btn btn-secondary btn-lg">Explorar el Blog</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Características Técnicas -->
+  <section class="features-section">
+    <div class="section-title">
+      <h2>Tecnologías Integradas</h2>
+      <p>Diseñado con el stack de desarrollo moderno más competitivo del mercado.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card hud-panel">
+        <div class="feature-icon">🚀</div>
+        <h3>Astro Híbrido</h3>
+        <p>Generación estática para páginas públicas (SEO impecable) y renderizado en servidor (SSR) para el área administrativa dinámica.</p>
+      </div>
+
+      <div class="feature-card hud-panel">
+        <div class="feature-icon">💾</div>
+        <h3>SQLite + Drizzle ORM</h3>
+        <p>Base de datos local portable, autocontenida y optimizada para despliegues instantáneos, lista para escalar a PostgreSQL.</p>
+      </div>
+
+      <div class="feature-card hud-panel">
+        <div class="feature-icon">✍️</div>
+        <h3>Editor TipTap</h3>
+        <p>Experiencia de escritura enriquecida tipo Notion. Genera HTML estructurado limpio, seguro y optimizado para SEO.</p>
+      </div>
+
+      {isStoreEnabled ? (
+        <div class="feature-card hud-panel">
+          <div class="feature-icon">💳</div>
+          <h3>Pagos Modulares</h3>
+          <p>Arquitectura desacoplada y lista para integrar pasarelas locales (PayU, ePayco, Mercado Pago) en pocos minutos.</p>
+        </div>
+      ) : (
+        <div class="feature-card hud-panel">
+          <div class="feature-icon">🛡️</div>
+          <h3>Middleware Global</h3>
+          <p>Protección automatizada en el ciclo de vida del servidor para verificar sesiones y restringir accesos no autorizados.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Enlaces a Páginas Estáticas del CMS -->
+  {pages.length > 0 && (
+    <section class="dynamic-pages-section">
+      <div class="section-title">
+        <h2>Páginas Creadas Dinámicamente</h2>
+        <p>Accede a las páginas estáticas editadas en tiempo real desde el administrador.</p>
+      </div>
+      <div class="pages-list-grid">
+        {pages.map((page) => (
+          <a href={`/${page.slug}`} class="page-link-card hud-panel">
+            <span class="page-icon">📄</span>
+            <div class="page-info">
+              <h4>{page.title}</h4>
+              <p>Ruta: <code>/{page.slug}</code></p>
+            </div>
+            <span class="arrow">➔</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+</Layout>
+
+<style>
+  /* Hero Section */
+  .hero-section {
+    position: relative;
+    padding: 80px 20px 100px 20px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(circle, hsla(263, 90%, 63%, 0.15) 0%, transparent 70%);
+    filter: blur(50px);
+    z-index: -1;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    background: hsla(263, 90%, 63%, 0.1);
+    border: 1px solid hsla(263, 90%, 63%, 0.25);
+    border-radius: var(--radius-full);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primary-light);
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .hero-content h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    max-width: 800px;
+    margin: 0 auto 24px auto;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .hero-content h1 span {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-description {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    max-width: 650px;
+    margin: 0 auto 40px auto;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .btn-lg {
+    padding: 14px 32px;
+    font-size: 1.05rem;
+  }
+
+  /* Características */
+  .features-section {
+    padding: 60px 0;
+  }
+
+  .section-title {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .section-title h2 {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+  }
+
+  .section-title p {
+    color: var(--text-muted);
+    font-size: 1rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+  }
+
+  .feature-card {
+    padding: 30px;
+    height: 100%;
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
+
+  .feature-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+    color: var(--text-main);
+  }
+
+  .feature-card p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* Dynamic Pages Section */
+  .dynamic-pages-section {
+    padding: 60px 0;
+    border-top: 1px solid var(--border-light);
+    margin-top: 40px;
+  }
+
+  .pages-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-link-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    transition: var(--transition-fast);
+  }
+
+  .page-link-card:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--color-secondary-light);
+    transform: translateY(-2px);
+  }
+
+  .page-icon {
+    font-size: 1.8rem;
+  }
+
+  .page-info {
+    flex: 1;
+  }
+
+  .page-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .page-info code {
+    font-size: 0.8rem;
+    color: var(--color-secondary-light);
+  }
+
+  .arrow {
+    color: var(--text-muted-dark);
+    transition: var(--transition-fast);
+  }
+
+  .page-link-card:hover .arrow {
+    color: var(--color-secondary-light);
+    transform: translateX(4px);
+  }
+</style>

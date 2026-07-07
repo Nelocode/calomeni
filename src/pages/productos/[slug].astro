@@ -1,0 +1,259 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { db, products } from '../../db/client';
+import { eq, and } from 'drizzle-orm';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/productos');
+}
+
+// Consultar el producto por su slug
+const result = await db
+  .select()
+  .from(products)
+  .where(
+    and(
+      eq(products.slug, slug),
+      eq(products.published, 1)
+    )
+  )
+  .limit(1);
+
+const product = result[0];
+
+if (!product) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found'
+  });
+}
+
+const imagesArray = JSON.parse(product.images || '[]');
+const mainImage = imagesArray[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80';
+
+// Formateador de moneda COP
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(value);
+};
+---
+
+<Layout title={`${product.name} | Tienda`}>
+  <div class="product-detail-container">
+    <a href="/productos" class="back-link">← Volver al catálogo</a>
+
+    <div class="product-layout glass-panel">
+      <!-- Imagen -->
+      <div class="product-image-container">
+        <img src={mainImage} alt={product.name} class="product-image" />
+      </div>
+
+      <!-- Detalles del Producto -->
+      <div class="product-info-container">
+        <span class="product-tag">Producto Oficial</span>
+        <h1>{product.name}</h1>
+        <p class="price-tag">{formatCurrency(product.price)}</p>
+
+        <div class="stock-status">
+          <span class={`indicator-dot ${product.stock > 0 ? 'active' : ''}`}></span>
+          <p>{product.stock > 0 ? `En inventario: ${product.stock} unidades` : 'Agotado'}</p>
+        </div>
+
+        <div class="product-description-box">
+          <h3>Descripción</h3>
+          <p>{product.description}</p>
+        </div>
+
+        <div class="product-actions">
+          <button 
+            class="btn btn-primary add-to-cart-detail-btn"
+            id="add-to-cart-btn"
+            data-id={product.id}
+            data-name={product.name}
+            data-price={product.price}
+            data-image={mainImage}
+            disabled={product.stock === 0}
+          >
+            {product.stock > 0 ? 'Añadir al Carrito 🛒' : 'Agotado'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<!-- Script para manejar la adición al carrito local de forma compartida -->
+<script>
+  interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    quantity: number;
+  }
+
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
+
+  if (addToCartBtn) {
+    addToCartBtn.addEventListener('click', () => {
+      const id = addToCartBtn.getAttribute('data-id')!;
+      const name = addToCartBtn.getAttribute('data-name')!;
+      const price = parseFloat(addToCartBtn.getAttribute('data-price')!);
+      const image = addToCartBtn.getAttribute('data-image')!;
+
+      // Cargar carrito de localStorage
+      let cart: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
+
+      const existingItem = cart.find(item => item.id === id);
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({ id, name, price, image, quantity: 1 });
+      }
+
+      // Guardar de vuelta
+      localStorage.setItem('cart', JSON.stringify(cart));
+      
+      // Retroalimentación visual
+      const originalText = addToCartBtn.textContent;
+      addToCartBtn.textContent = '¡Añadido! ✓';
+      addToCartBtn.setAttribute('style', 'background: var(--color-success); border-color: var(--color-success); color: white;');
+      
+      setTimeout(() => {
+        addToCartBtn.textContent = originalText;
+        addToCartBtn.removeAttribute('style');
+      }, 1500);
+    });
+  }
+</script>
+
+<style>
+  .product-detail-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    color: var(--color-secondary-light);
+    transform: translateX(-4px);
+  }
+
+  .product-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 40px;
+    border-radius: var(--radius-lg);
+  }
+
+  .product-image-container {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    height: 450px;
+    background: hsla(222, 25%, 4%, 0.4);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .product-info-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-tag {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-primary-light);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  .product-info-container h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .price-tag {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-secondary-light);
+    margin-bottom: 24px;
+  }
+
+  .stock-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 30px;
+  }
+
+  .indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-danger);
+    box-shadow: 0 0 6px var(--color-danger);
+  }
+
+  .indicator-dot.active {
+    background-color: var(--color-success);
+    box-shadow: 0 0 8px var(--color-success);
+  }
+
+  .product-description-box {
+    border-top: 1px solid var(--border-light);
+    padding-top: 24px;
+    margin-bottom: 40px;
+  }
+
+  .product-description-box h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .product-description-box p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .product-actions {
+    margin-top: auto;
+  }
+
+  .add-to-cart-detail-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    border-radius: var(--radius-md);
+  }
+</style>
