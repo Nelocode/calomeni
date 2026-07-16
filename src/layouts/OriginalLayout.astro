@@ -308,6 +308,20 @@ const {
           background: rgba(255, 255, 255, 0.05) !important;
           color: #ffcc00 !important;
         }
+
+        /* Ocultar menú duplicado en móvil */
+        #menu, .custom_menu_4, .main_menu_underline_effect {
+          display: none !important;
+        }
+        /* Mostrar hamburguesa solo en móvil */
+        #mobile_menu_toggler {
+          display: block !important;
+        }
+      }
+
+      /* Ocultar hamburguesa en escritorio por defecto */
+      #mobile_menu_toggler {
+        display: none !important;
       }
     </style>
 
@@ -480,9 +494,11 @@ const {
         var mobileMenu = $('#mobile_menu');
         var toggler = $('#mobile_menu_toggler');
         
-        toggler.on('click', function(e) {
+        // Remove duplicate handlers and handle slide toggle with animation stop
+        toggler.off('click').on('click', function(e) {
           e.preventDefault();
-          mobileMenu.slideToggle(300);
+          e.stopPropagation();
+          mobileMenu.stop(true, true).slideToggle(300);
           $('.m_nav_ham').toggleClass('button_opened button_closed');
         });
       });
