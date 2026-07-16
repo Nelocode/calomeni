@@ -6,5 +6,4 @@ dist
 .env
 .agents
 *.log
-scripts
 tests
