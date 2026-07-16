@@ -12,12 +12,12 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Exponer el puerto por defecto de Astro Node
-EXPOSE 4321
+# Exponer el puerto por defecto de Astro Node (Cambiado a 3000 para cumplir con el estándar de Easypanel)
+EXPOSE 3000
 
 # Variables de entorno por defecto para producción
 ENV HOST=0.0.0.0
-ENV PORT=4321
+ENV PORT=3000
 ENV NODE_ENV=production
 
 # Ejecutar el script de inicio para auto-inicializar la base de datos sqlite en volumen
