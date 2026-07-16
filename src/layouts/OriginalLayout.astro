@@ -1,0 +1,388 @@
+---
+import { getSetting } from '../lib/settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  isHome?: boolean;
+}
+
+const { 
+  title, 
+  description = "Calomeni & Associates, LLC law firm",
+  metaTitle,
+  metaDescription,
+  isHome = false
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{metaTitle || title}</title>
+    {metaDescription && <meta name="description" content={metaDescription} />}
+
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:regular,600|Courgette:regular,600|Pangolin:regular,600|Permanent+Marker:regular,600" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif%3A400%2C700%2C400italic%2C700italic%7CLato%3A300%2C400%2C700%2C400italic%7CMontserrat%3A400%2C700" />
+
+    <!-- Original Revived Stylesheets -->
+    <link rel="stylesheet" href="/assets/original/css/all.css" />
+    <link rel="stylesheet" href="/assets/original/css/v4-shims.css" />
+    <link rel="stylesheet" href="/assets/original/css/wp-customer-reviews-generated.css" />
+    <link rel="stylesheet" href="/assets/original/css/style.min.css" />
+    <link rel="stylesheet" href="/assets/original/css/styles.css" />
+    <link rel="stylesheet" href="/assets/original/css/rs6.css" />
+    <link rel="stylesheet" href="/assets/original/css/sfsi-style.css" />
+    <link rel="stylesheet" href="/assets/original/css/disable_sfsi.css" />
+    <link rel="stylesheet" href="/assets/original/css/grid.css" />
+    <link rel="stylesheet" href="/assets/original/css/icons.css" />
+    <link rel="stylesheet" href="/assets/original/css/js_composer.min.css" />
+    <link rel="stylesheet" href="/assets/original/css/theme-style.css" />
+    <link rel="stylesheet" href="/assets/original/css/animations.css" />
+    <link rel="stylesheet" href="/assets/original/css/grid_responsive.css" />
+    <link rel="stylesheet" href="/assets/original/css/google-review.css" />
+    <link rel="stylesheet" href="/assets/original/css/gdpr-main.css" />
+    <link rel="stylesheet" href="/assets/original/css/background-style.css" />
+    <link rel="stylesheet" href="/assets/original/css/parallax-animate.css" />
+    <link rel="stylesheet" href="/assets/original/css/parallax-style.css" />
+    <link rel="stylesheet" href="/assets/original/css/composer-animate.min.css" />
+    <script is:inline>
+      var bocJSParams = {
+        "boc_is_mobile_device": "",
+        "boc_theme_url": "/assets/original",
+        "header_height": "100",
+        "sticky_header": "0",
+        "submenu_arrow_effect": "1",
+        "mm_bordered_columns": "1",
+        "transparent_header": "0",
+        "fixed_footer": "0",
+        "boc_submenu_animation_effect": "sub_fade_in"
+      };
+    </script>
+    <!-- Original Scripts -->
+    <script is:inline src="/assets/original/js/jquery.min.js"></script>
+    <script is:inline src="/assets/original/js/jquery-migrate.min.js"></script>
+    <script is:inline src="/assets/original/js/waypoints.min.js"></script>
+
+    <!-- Anulaciones para forzar visibilidad y evitar pantalla en blanco en animaciones -->
+    <style is:inline>
+      .wpb_animate_when_almost_visible,
+      .vc_animate-when-almost-visible,
+      .boc_animate_when_almost_visible,
+      .animate_when_almost_visible,
+      [class*="animate_when_almost_visible"],
+      [class*="boc_animate_when_almost_visible"],
+      .wpb_start_animation,
+      .vc_start_animation,
+      .boc_anim_hidden,
+      .animated_bgr {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        transition: none !important;
+        animation: none !important;
+      }
+
+      /* Mapeo de iconos icomoon rotos a FontAwesome local */
+      [class^="icon-"], [class*=" icon-"] {
+        font-family: "Font Awesome 5 Free" !important;
+        font-weight: 900 !important;
+        font-style: normal !important;
+      }
+      .icon-arrow-right6::before { content: "\f061" !important; }
+      .icon-globe2::before { content: "\f0ac" !important; }
+      .icon-car::before { content: "\f1b9" !important; }
+      .icon-hammer::before { content: "\f6e3" !important; }
+      .icon-briefcase2::before { content: "\f0b1" !important; }
+      .icon-angle-right2::before { content: "\f105" !important; }
+
+      /* Forzar colores visibles por defecto para evitar texto blanco sobre fondo blanco */
+      #wrapper .content_body h1,
+      #wrapper .content_body h2,
+      #wrapper .content_body h3,
+      #wrapper .content_body h4,
+      #wrapper .content_body h5,
+      #wrapper .content_body h6 {
+        color: #0f3a62 !important; /* Azul marino original del tema */
+      }
+      #wrapper .content_body .full_container_page_title h1 {
+        color: #ffffff !important; /* Blanco para el banner de título */
+      }
+      #wrapper .content_body p,
+      #wrapper .content_body li,
+      #wrapper .content_body td {
+        color: #555 !important; /* Gris oscuro legible */
+      }
+      #wrapper .content_body a:not(.button) {
+        color: #0f3a62 !important;
+      }
+
+      /* Respetar colores claros en secciones diseñadas como oscuras */
+      #wrapper .content_body .white_text h1,
+      #wrapper .content_body .white_text h2,
+      #wrapper .content_body .white_text h3,
+      #wrapper .content_body .white_text h4,
+      #wrapper .content_body .white_text h5,
+      #wrapper .content_body .white_text h6,
+      #wrapper .content_body .white_text p,
+      #wrapper .content_body .white_text span,
+      #wrapper .content_body .white_text li,
+      #wrapper .content_body .white_text a:not(.button),
+      #wrapper .content_body .oscuro h1,
+      #wrapper .content_body .oscuro h2,
+      #wrapper .content_body .oscuro h3,
+      #wrapper .content_body .oscuro h4,
+      #wrapper .content_body .oscuro h5,
+      #wrapper .content_body .oscuro h6,
+      #wrapper .content_body .oscuro p,
+      #wrapper .content_body .oscuro span,
+      #wrapper .content_body .oscuro li,
+      #wrapper .content_body .oscuro a:not(.button) {
+        color: #ffffff !important;
+      }
+
+      /* Spacing to prevent fixed header from overlapping content on internal pages */
+      body:not(.home) .content_body {
+        padding-top: 112px;
+      }
+
+      /* Force footer to display normally at the bottom of the page flow with unified dark blue background */
+      #wrapper #footer {
+        position: relative !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 10 !important;
+        background-color: #08213b !important; /* Navy azul oscuro corporativo */
+        background-image: none !important;
+        color: #a6a6a6 !important;
+        padding-top: 50px !important;
+        padding-bottom: 0px !important;
+        margin-top: 0px !important;
+      }
+      
+      #wrapper #footer h3 {
+        color: #ffffff !important;
+        font-weight: bold !important;
+        font-size: 16px !important;
+        margin-bottom: 20px !important;
+        text-transform: uppercase !important;
+      }
+      
+      #wrapper #footer p,
+      #wrapper #footer li,
+      #wrapper #footer td,
+      #wrapper #footer div:not(.footer_btm) {
+        color: #a6a6a6 !important;
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+      }
+      
+      #wrapper #footer a {
+        color: #ffffff !important;
+        text-decoration: none !important;
+        transition: color 0.2s ease !important;
+      }
+      
+      #wrapper #footer a:hover {
+        color: #ffcc00 !important; /* Dorado corporativo al pasar el cursor */
+      }
+
+      #wrapper #footer .footer_btm {
+        background-color: #051628 !important; /* Azul profundo para barra inferior */
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 15px 0 !important;
+        margin-top: 30px !important;
+        width: 100% !important;
+      }
+      
+      #wrapper #footer .footer_btm #powered {
+        color: #888888 !important;
+        font-size: 12px !important;
+      }
+    </style>
+
+    <!-- Script reactivo para evitar que scripts dinámicos oculten contenido después de la carga -->
+    <script is:inline>
+      (function() {
+        function checkAndForceVisibility() {
+          var targets = [document.querySelector('#wrapper'), document.querySelector('.content_body')];
+          targets.forEach(function(container) {
+            if (!container) return;
+            var elements = [container].concat(Array.prototype.slice.call(container.querySelectorAll('*')));
+            elements.forEach(function(el) {
+              // Si el elemento tiene opacidad 0 o visibility hidden calculada, lo forzamos a mostrarse
+              var style = window.getComputedStyle(el);
+              if (style.opacity === '0') {
+                el.style.setProperty('opacity', '1', 'important');
+                console.log('[DEBUG-VISIBILITY] Opacity forced to 1 on:', el.tagName, el.className, el.id);
+              }
+              if (style.visibility === 'hidden') {
+                el.style.setProperty('visibility', 'visible', 'important');
+                console.log('[DEBUG-VISIBILITY] Visibility forced to visible on:', el.tagName, el.className, el.id);
+              }
+            });
+          });
+        }
+
+        // Ejecutar inmediatamente, en el load, y luego periódicamente
+        window.addEventListener('DOMContentLoaded', checkAndForceVisibility);
+        window.addEventListener('load', checkAndForceVisibility);
+        setInterval(checkAndForceVisibility, 300);
+      })();
+    </script>
+  </head>
+  
+  <body class={`${isHome ? 'home' : 'page-template-default page'} page-id-23638 wp-custom-logo elegante_body_class_custom wpb-js-composer js-comp-ver-6.4.1 vc_responsive`}>
+    
+    <div id="wrapper" class="full_width_wrapper page_title_bgr responsive ">
+      
+      <!-- Original Header -->
+      <header id="header" class="no_subheader block_header">
+        <div class="rel_pos">
+          <div class="container">
+            <div class="section rel_pos">
+              
+              <div id="logo">
+                <div class="logo_img">
+                  <a href="/" title="Calomeni &amp; Associates, LLC" rel="home">
+                    <img src="/assets/imported/logo-big.png" alt="Calomeni &amp; Associates, LLC" />
+                  </a>
+                </div>
+              </div>
+
+              <div id="mobile_menu_toggler">
+                <div id="m_nav_menu" class="m_nav">
+                  <div class="m_nav_ham button_closed" id="m_ham_1"></div>
+                  <div class="m_nav_ham button_closed" id="m_ham_2"></div>
+                  <div class="m_nav_ham button_closed" id="m_ham_3"></div>
+                </div>
+              </div>
+
+              <div class="custom_menu_4 main_menu_underline_effect">	
+                <div id="menu" class="menu-principal-container">
+                  <ul>
+                    <li class="menu-item"><a href="/">HOME</a></li>
+                    <li class="menu-item"><a href="/about-us">ABOUT US</a></li>
+                    <li class="menu-item"><a href="/services">OUR SERVICES</a></li>
+                    <li class="menu-item"><a href="/gallery">GALLERY</a></li>
+                    <li class="menu-item"><a href="/reviews">REVIEWS</a></li>
+                    <li class="menu-item"><a href="/contact-us">CONTACT US</a></li>
+                  </ul>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+
+        <div id="mobile_menu">
+          <ul>
+            <li class="menu-item"><a href="/">HOME</a></li>
+            <li class="menu-item"><a href="/about-us">ABOUT US</a></li>
+            <li class="menu-item"><a href="/services">OUR SERVICES</a></li>
+            <li class="menu-item"><a href="/gallery">GALLERY</a></li>
+            <li class="menu-item"><a href="/reviews">REVIEWS</a></li>
+            <li class="menu-item"><a href="/contact-us">CONTACT US</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <!-- Main Slot Content -->
+      <div class="content_body">
+        <slot />
+      </div>
+
+      <!-- Original Footer -->
+      <div id="footer" class="">
+        <div class="container">	
+          <div class="section">
+            
+            <div class="col span_1_of_3">
+              <h3>Contact us</h3>
+              <div class="textwidget">
+                <p>If you have any questions, you can contact us to provide you a personalized attention.</p>
+                <p>Our contact info are the following:</p>
+                <p style="font-size: 16px; text-align: left !important;">
+                  <i class="fa fa-phone" style="color: white; margin-right: 9px;"></i><strong>Phone(s):</strong> (678) 585-3606<br />
+                  <strong>Fax:</strong> (678)-585-3626<br />
+                  <strong>Email:</strong>&nbsp;<a href="mailto:office.calomeni@gmail.com" target="_blank" rel="noopener noreferrer">office.calomeni@gmail.com</a>
+                </p>
+                <p><img decoding="async" style="float: left; margin-right: 8px; margin-top: 8px; max-height: 28px;" src="https://www.astraps.com/images/mejor.png" /></p>
+                <p class="color-blanco" style="font-size: 16px; text-align: left; margin-top: 20px;">We are your best choice</p>
+              </div>
+            </div>
+
+            <div class="col span_1_of_3">
+              <h3>Main Menu</h3>
+              <div class="menu-principal-container">
+                <ul id="menu-principal-2" class="menu">
+                  <li class="menu-item"><a href="/">Home</a></li>
+                  <li class="menu-item"><a href="/about-us">About us</a></li>
+                  <li class="menu-item"><a href="/services">Our Services</a></li>
+                  <li class="menu-item"><a href="/gallery">Gallery</a></li>
+                  <li class="menu-item"><a href="/reviews">Reviews</a></li>
+                  <li class="menu-item"><a href="/contact-us">Contact us</a></li>
+                </ul>
+              </div>	
+            </div>
+
+            <div class="col span_1_of_3">
+              <h3>Our Services</h3>
+              <div class="textwidget">
+                <ul>
+                  <li>Immigration</li>
+                  <li>Auto/Work Accidents</li>
+                  <li>Family Law</li>
+                  <li>Business Law</li>
+                </ul>
+              </div>
+            </div>
+            
+          </div> 
+        </div>
+        
+        <div class="footer_btm">
+          <div class="container">
+            <div class="footer_btm_inner">
+              <div id="powered">
+                &copy; {new Date().getFullYear()} Calomeni &amp; Associates, LLC - All rights reserved
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Original Scripts loaded at bottom -->
+    <script is:inline src="/assets/original/js/libs.min.js"></script>
+    <script is:inline src="/assets/original/js/common.js"></script>
+    <script is:inline src="/assets/original/js/js_composer_front.min.js"></script>
+    <script is:inline src="/assets/original/js/ultimate_bg.js"></script>
+    <script is:inline src="/assets/original/js/jparallax.js"></script>
+    <script is:inline src="/assets/original/js/jquery.vhparallax.js"></script>
+    <script is:inline src="/assets/original/js/jquery.appear.js"></script>
+    <script is:inline src="/assets/original/js/parallax-custom.js"></script>
+
+    <!-- Mobile menu functionality script -->
+    <script is:inline>
+      jQuery(document).ready(function($) {
+        var mobileMenu = $('#mobile_menu');
+        var toggler = $('#mobile_menu_toggler');
+        
+        toggler.on('click', function(e) {
+          e.preventDefault();
+          mobileMenu.slideToggle(300);
+          $('.m_nav_ham').toggleClass('button_opened button_closed');
+        });
+      });
+    </script>
+  </body>
+</html>

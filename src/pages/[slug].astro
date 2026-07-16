@@ -1,5 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import OriginalLayout from '../layouts/OriginalLayout.astro';
 import { db, postsPages } from '../db/client';
 import { eq, and } from 'drizzle-orm';
 
@@ -35,20 +35,24 @@ if (!page) {
 }
 ---
 
-<Layout 
+<OriginalLayout 
   title={page.title} 
-  description={page.metaDescription || undefined}
+  metaDescription={page.metaDescription || undefined}
   metaTitle={page.metaTitle || undefined}
 >
-  <article class="static-page-container">
-    <header class="page-header">
-      <h1>{page.title}</h1>
-      <div class="header-divider"></div>
-    </header>
-    
-    <section class="page-content" set:html={page.content} />
-  </article>
-</Layout>
+  <!-- Original Theme Page Title Banner -->
+  <div class="full_container_page_title">
+    <div class="container">
+      <div class="section rel_pos">
+        <div class="page_heading">
+          <h1>{page.title}</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="original-page-content static-page-container page-content" set:html={page.content} />
+</OriginalLayout>
 
 <style>
   .static-page-container {
@@ -83,7 +87,7 @@ if (!page) {
   .page-content {
     font-size: 1.15rem;
     line-height: 1.75;
-    color: var(--text-muted);
+    color: #555;
   }
 
   .page-content :global(> * + *) {
@@ -94,27 +98,28 @@ if (!page) {
     font-size: 2.2rem;
     margin-top: 1.8em;
     margin-bottom: 0.6em;
-    color: var(--text-main);
-    font-family: var(--font-display);
+    color: #0f3a62;
+    font-family: "Montserrat", Arial, Helvetica, sans-serif;
   }
 
   .page-content :global(h2) {
     font-size: 1.7rem;
     margin-top: 1.6em;
     margin-bottom: 0.5em;
-    color: var(--text-main);
-    font-family: var(--font-display);
+    color: #0f3a62;
+    font-family: "Montserrat", Arial, Helvetica, sans-serif;
   }
 
   .page-content :global(h3) {
     font-size: 1.3rem;
     margin-top: 1.4em;
     margin-bottom: 0.4em;
-    color: var(--text-main);
+    color: #0f3a62;
   }
 
   .page-content :global(p) {
     margin-bottom: 1.2em;
+    color: #555;
   }
 
   .page-content :global(ul), .page-content :global(ol) {
@@ -145,5 +150,216 @@ if (!page) {
     color: var(--color-secondary-light);
     overflow-x: auto;
     margin: 24px 0;
+  }
+
+  /* Estilos para el formulario de contacto */
+  .page-content :global(form) {
+    max-width: 600px;
+    margin: 30px 0;
+  }
+  .page-content :global(input[type="text"]),
+  .page-content :global(input[type="email"]),
+  .page-content :global(input[type="tel"]),
+  .page-content :global(textarea) {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    margin-bottom: 20px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    font-size: 1rem !important;
+    background: #fff !important;
+    color: #333 !important;
+    box-sizing: border-box !important;
+  }
+  .page-content :global(button),
+  .page-content :global(input[type="submit"]) {
+    background-color: #0f3a62 !important;
+    color: #fff !important;
+    padding: 12px 28px !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    font-size: 1rem !important;
+    transition: background-color 0.2s ease !important;
+    display: inline-block !important;
+  }
+  .page-content :global(button:hover),
+  .page-content :global(input[type="submit"]:hover) {
+    background-color: #0c2d4d !important;
+  }
+
+  /* Estilos para evitar iconos SVG gigantes y maquetar tarjetas de contacto */
+  .page-content :global(svg.e-font-icon-svg) {
+    width: 24px !important;
+    height: 24px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    fill: #0f3a62 !important; /* Azul marino */
+    color: #0f3a62 !important;
+    margin-right: 8px !important;
+  }
+
+  /* Icono check específico para listas de servicios */
+  .page-content :global(li svg.e-font-icon-svg) {
+    width: 16px !important;
+    height: 16px !important;
+    fill: #2ecc71 !important; /* Verde */
+    color: #2ecc71 !important;
+  }
+
+  /* Tarjetas de contacto (Dirección, Teléfono, Fax, Correo) */
+  .page-content :global(.contact-card-link) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 15px !important;
+    padding: 16px 20px !important;
+    margin: 15px 0 !important;
+    background: #fdfdfd !important;
+    border: 1px solid #eaeaea !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+    color: #555 !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  
+  .page-content :global(a.contact-card-link:hover) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
+    border-color: #0f3a62 !important;
+  }
+
+  .page-content :global(.contact-card-link .icon-wrap) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(15, 58, 98, 0.08) !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    color: #0f3a62 !important;
+  }
+
+  .page-content :global(.contact-card-link .icon-wrap i) {
+    font-size: 1.25rem !important;
+  }
+
+  .page-content :global(.contact-card-link .card-info h3) {
+    margin: 0 0 4px 0 !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: #0f3a62 !important;
+    line-height: 1.2 !important;
+  }
+
+  .page-content :global(.contact-card-link .card-info p) {
+    margin: 0 !important;
+    font-size: 0.95rem !important;
+    color: #555 !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Cuadrícula de servicios premium */
+  .page-content :global(.services-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    gap: 30px !important;
+    margin-top: 30px !important;
+    margin-bottom: 50px !important;
+  }
+  
+  .page-content :global(.service-card) {
+    background: #fff !important;
+    border: 1px solid #eaeaea !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .page-content :global(.service-card:hover) {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+  }
+  
+  .page-content :global(.service-image) {
+    width: 100% !important;
+    height: 200px !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  
+  .page-content :global(.service-content) {
+    padding: 20px !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .page-content :global(.service-content h3) {
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    color: #0f3a62 !important;
+  }
+  
+  .page-content :global(.service-content p) {
+    font-size: 0.95rem !important;
+    color: #555 !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+  }
+
+  /* Contenedor Flexbox para tarjetas de equipo de igual altura */
+  .page-content :global(.team-flex-container) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .page-content :global(.team-card) {
+    flex: 1 1 calc(50% - 10px) !important;
+    background: #fdfdfd !important;
+    border: 1px solid #eaeaea !important;
+    border-radius: 8px !important;
+    padding: 25px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+  
+  @media only screen and (max-width: 600px) {
+    .page-content :global(.team-card) {
+      flex: 1 1 100% !important;
+    }
+  }
+
+  .page-content :global(.team-logo-avatar) {
+    width: 50px !important;
+    height: 50px !important;
+    background: rgba(15, 58, 98, 0.08) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+  }
+
+  .page-content :global(.team-logo-avatar img) {
+    width: 32px !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 !important;
   }
 </style>

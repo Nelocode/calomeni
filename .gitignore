@@ -23,10 +23,8 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-# Local databases (SQLite)
-local.db
+# Local databases (SQLite) (Only ignore journal/temporary files)
 local.db-journal
-*.db
 *.db-journal
 
 # Temporaries and Zips

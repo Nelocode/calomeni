@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+.astro
+dist
+.env
+.agents
+*.log
+scripts
+tests
