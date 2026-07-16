@@ -323,6 +323,44 @@ const {
         #mobile_menu_toggler {
           display: block !important;
         }
+
+        /* Alinear logo e icono de hamburguesa en extremos opuestos */
+        #header .section.rel_pos {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          padding: 10px 15px !important;
+          box-sizing: border-box !important;
+          width: 100% !important;
+        }
+
+        #logo {
+          float: none !important;
+          margin: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        #logo .logo_img img {
+          max-height: 50px !important; /* Logo compacto en móviles */
+          width: auto !important;
+          margin: 0 !important;
+        }
+
+        #mobile_menu_toggler {
+          float: none !important;
+          margin: 0 !important;
+          position: static !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        #header, .logo_img {
+          height: auto !important;
+          min-height: unset !important;
+        }
       }
     </style>
 
