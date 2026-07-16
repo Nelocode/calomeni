@@ -304,6 +304,12 @@ const {
           text-decoration: none !important;
           letter-spacing: 0.05em !important;
         }
+      /* Ocultar hamburguesa en escritorio por defecto (debe ir antes de la media query) */
+      #mobile_menu_toggler {
+        display: none !important;
+      }
+
+      @media only screen and (max-width: 768px) {
         #mobile_menu li a:hover {
           background: rgba(255, 255, 255, 0.05) !important;
           color: #ffcc00 !important;
@@ -317,11 +323,6 @@ const {
         #mobile_menu_toggler {
           display: block !important;
         }
-      }
-
-      /* Ocultar hamburguesa en escritorio por defecto */
-      #mobile_menu_toggler {
-        display: none !important;
       }
     </style>
 
